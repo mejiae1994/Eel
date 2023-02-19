@@ -1,7 +1,15 @@
-class Vector {
+export class Vector {
   constructor(x, y) {
     this.x = x || 0;
     this.y = y || 0;
+  }
+
+  static subVector(v1, v2) {
+    return new Vector(v1.x - v2.x, v1.y - v2.y);
+  }
+
+  static getAngle(v1, v2) {
+    return Math.atan2((v1.y) - v2.y, (v1.x) - v2.x);
   }
 
   set(x, y) {
@@ -19,7 +27,6 @@ class Vector {
   subtract(v) {
     this.x -= v.x;
     this.y -= v.y;
-    return this;
   }
 
   multiply(scalar) {
@@ -58,3 +65,4 @@ class Vector {
     return new Vector(this.x, this.y);
   }
 }
+

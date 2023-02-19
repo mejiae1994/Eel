@@ -15,3 +15,21 @@ body {
   transform: translate(-50%, -50%);
   background-color: rgba(39, 122, 169, 0.1);
 }
+
+#x {
+  display: inline-block;
+  position: absolute;
+  z-index: 1;
+  top: 25%;
+  left: 56.5%;
+  font-size: x-large;
+}
+
+#y {
+  display: inline-block;
+  position: absolute;
+  z-index: 1;
+  top: 25%;
+  left: 60%;
+  font-size: x-large;
+}

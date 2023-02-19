@@ -1,6 +1,9 @@
 "use strict";
+import {Vector} from "./utils.js";
 const canvas = document.getElementById("canvas");
 const ctx = canvas.getContext("2d");
+const xSpan = document.getElementById("x");
+const ySpan = document.getElementById("y");
 let canvasW = canvas.width;
 let canvasH = canvas.height;
 let player;
@@ -23,7 +26,6 @@ function gameLoop() {
 
 function update() {
   player.playerUpdate();
-  
 }
 
 function draw() {
@@ -35,58 +37,12 @@ function draw() {
   ctx.restore();
 }
 
-class Vector {
-  constructor(x, y) {
-    this.x = x;
-    this.y = y;
-  }
-
-  static subVector(v1, v2) {
-    return new Vector(v1.x - v2.x, v1.y - v2.y);
-  }
-
-  set(x, y) {
-    this.x = x;
-    this.y = y;
-    return this;
-  }
-
-  add(v) {
-    this.x += v.x;
-    this.y += v.y;
-    return this;
-  }
-
-  subtract(v) {
-    this.x -= v.x;
-    this.y -= v.y;
-  }
-
-  multiply(scalar) {
-    this.x *= scalar;
-    this.y *= scalar;
-    return this;
-  }
-
-  divide(scalar) {
-    if (scalar !== 0) {
-      this.x /= scalar;
-      this.y /= scalar;
-    }
-    return this;
-  }
-
-  normalize() {
-    const length = this.length();
-    if (length !== 0) {
-      this.divide(length);
-    }
-    return this;
-  }
-
-  length() {
-    return Math.sqrt(this.x * this.x + this.y * this.y);
-  }
+//maybe only compute if the mousemove is on the canvas if possible
+function getMousePosition() {
+  canvas.addEventListener("mousemove", function(event) {
+    const rect = canvas.getBoundingClientRect();
+    mouse.set(event.clientX - rect.left, event.clientY - rect.top);
+  });
 }
 
 class Player {
@@ -96,15 +52,13 @@ class Player {
   }
   
   playerUpdate() {
-    this.rotationAngle = getAngle(mouse, this.position);
-    // console.log(`player position: ${this.position.x} ${this.position.y}`);
-    // console.log(`mouse coordinates: ${mouse.x} ${mouse.y}`);
-    // console.dir(`mouse vector position after vector subtract ${mouse.subtract(this.position).x} ${mouse.subtract(this.position).y}`);
-    // console.log(`mouse regular substraction: ${mouse.x - this.position.x} ${mouse.y - this.position.y}`);
-    // this.position.add({x: mouse.x - this.position.x, y: mouse.y - this.position.y});
-    let dir = Vector.subVector(mouse, this.position).normalize();
-    dir.multiply(1);
-    this.position.add(dir);
+    xSpan.innerText = `X: ${Math.round(this.position.x)}`
+    ySpan.innerText = `Y: ${Math.round(this.position.y)}`
+
+    this.rotationAngle = Vector.getAngle(mouse, this.position);
+    let directionV = Vector.subVector(mouse, this.position).normalize();
+    directionV.multiply(1);
+    this.position.add(directionV);
 
   }
 
@@ -117,16 +71,6 @@ class Player {
   }
 }
 
-//maybe only compute if the mousemove is on the canvas if possible
-function getMousePosition() {
-  canvas.addEventListener("mousemove", function(event) {
-    const rect = canvas.getBoundingClientRect();
-    mouse.set(event.clientX - rect.left, event.clientY - rect.top);
-  });
-}
 
-function getAngle(cursorPos, playerPos) {
-  return Math.atan2((cursorPos.y) - playerPos.y, (cursorPos.x) - playerPos.x);
-}
 
 
