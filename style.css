@@ -20,8 +20,8 @@ body {
   display: inline-block;
   position: absolute;
   z-index: 1;
-  top: 25%;
-  left: 56.5%;
+  top: 20%;
+  left: 56%;
   font-size: x-large;
 }
 
@@ -29,7 +29,34 @@ body {
   display: inline-block;
   position: absolute;
   z-index: 1;
-  top: 25%;
+  top: 20%;
   left: 60%;
+  font-size: x-large;
+}
+
+#mouse-x {
+  display: inline-block;
+  position: absolute;
+  z-index: 1;
+  top: 20%;
+  left: 37.5%;
+  font-size: x-large;
+}
+
+#mouse-y {
+  display: inline-block;
+  position: absolute;
+  z-index: 1;
+  top: 20%;
+  left: 42%;
+  font-size: x-large;
+}
+
+#fps {
+  display: inline-block;
+  position: absolute;
+  z-index: 1;
+  top: 20%;
+  left: 50%;
   font-size: x-large;
 }
