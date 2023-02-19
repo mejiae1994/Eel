@@ -6,10 +6,43 @@ let canvasH = canvas.height;
 let player;
 let mouse;
 
+window.onload = init;
+
+function init() {
+  player = new Player(canvasW / 2, canvasH / 2);
+  mouse = new Vector(0,0);
+  getMousePosition();
+  window.requestAnimationFrame(gameLoop);
+}
+
+function gameLoop() {
+  update();
+  draw();
+  window.requestAnimationFrame(gameLoop);
+}
+
+function update() {
+  player.playerUpdate();
+  
+}
+
+function draw() {
+  ctx.clearRect(0, 0, canvasW, canvasH);
+  ctx.save();
+  ctx.beginPath();
+  player.display();
+  ctx.closePath();
+  ctx.restore();
+}
+
 class Vector {
   constructor(x, y) {
-    this.x = x || 0;
-    this.y = y || 0;
+    this.x = x;
+    this.y = y;
+  }
+
+  static subVector(v1, v2) {
+    return new Vector(v1.x - v2.x, v1.y - v2.y);
   }
 
   set(x, y) {
@@ -18,15 +51,20 @@ class Vector {
     return this;
   }
 
-  addVector(v) {
-    this.x += v.x * 0.0005;
-    this.y += v.y * 0.0005;
+  add(v) {
+    this.x += v.x;
+    this.y += v.y;
     return this;
   }
 
   subtract(v) {
     this.x -= v.x;
     this.y -= v.y;
+  }
+
+  multiply(scalar) {
+    this.x *= scalar;
+    this.y *= scalar;
     return this;
   }
 
@@ -59,12 +97,15 @@ class Player {
   
   playerUpdate() {
     this.rotationAngle = getAngle(mouse, this.position);
-    // this.position.addVector(mouse.subtract(this.position))
-    console.log(mouse.x, mouse.y);
-    // if(mouse.x >= 0 && mouse.y >= 0) {
-    //   this.position.addVector(mouse.subtract(this.position))
-    // }
-  // player.updatePosition(mouse.x - player.position.posX, mouse.y - player.position.posY);
+    // console.log(`player position: ${this.position.x} ${this.position.y}`);
+    // console.log(`mouse coordinates: ${mouse.x} ${mouse.y}`);
+    // console.dir(`mouse vector position after vector subtract ${mouse.subtract(this.position).x} ${mouse.subtract(this.position).y}`);
+    // console.log(`mouse regular substraction: ${mouse.x - this.position.x} ${mouse.y - this.position.y}`);
+    // this.position.add({x: mouse.x - this.position.x, y: mouse.y - this.position.y});
+    let dir = Vector.subVector(mouse, this.position).normalize();
+    dir.multiply(1);
+    this.position.add(dir);
+
   }
 
   display() {
@@ -76,44 +117,16 @@ class Player {
   }
 }
 
-window.onload = init;
-
-function init() {
-  player = new Player(canvasW / 2, canvasH / 2);
-  mouse = new Vector();
-  getMousePosition();
-  window.requestAnimationFrame(gameLoop);
-}
-
-function gameLoop() {
-  update();
-  draw();
-  window.requestAnimationFrame(gameLoop);
-}
-
 //maybe only compute if the mousemove is on the canvas if possible
 function getMousePosition() {
   canvas.addEventListener("mousemove", function(event) {
     const rect = canvas.getBoundingClientRect();
     mouse.set(event.clientX - rect.left, event.clientY - rect.top);
-    console.log(mouse.x, mouse.y);
   });
-}
-
-function update() {
-  player.playerUpdate();
-  
 }
 
 function getAngle(cursorPos, playerPos) {
   return Math.atan2((cursorPos.y) - playerPos.y, (cursorPos.x) - playerPos.x);
 }
 
-function draw() {
-  ctx.clearRect(0, 0, canvasW, canvasH);
-  ctx.save();
-  ctx.beginPath();
-  player.display();
-  // ctx.closePath();
-  ctx.restore();
-}
+
