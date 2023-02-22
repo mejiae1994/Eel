@@ -12,6 +12,10 @@ export class Vector {
     return Math.atan2((v1.y) - v2.y, (v1.x) - v2.x);
   }
 
+  static getVelocityAngle(v) {
+    return Math.atan2(v.y, v.x);
+  }
+
   set(x, y) {
     this.x = x;
     this.y = y;
@@ -27,6 +31,7 @@ export class Vector {
   subtract(v) {
     this.x -= v.x;
     this.y -= v.y;
+    return this;
   }
 
   multiply(scalar) {
@@ -47,6 +52,22 @@ export class Vector {
     const length = this.length();
     if (length !== 0) {
       this.divide(length);
+    }
+    return this;
+  }
+
+  setMag(magnitude) {
+    const currentMag = this.length();
+    if (currentMag !== 0) {
+      this.multiply(magnitude / currentMag);
+    }
+    return this;
+  }
+
+  limit(max) {
+    const currentMag = this.length();
+    if (currentMag > max) {
+      this.divide(currentMag / max);
     }
     return this;
   }
