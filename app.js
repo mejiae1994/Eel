@@ -21,12 +21,12 @@ let fps;
 window.onload = init;
 
 function init() {
-  player = new Eel(canvasW / 2, canvasH / 2, 40, 40, "red", EntityType.PLAYER);
   mouse = new Vector(0,0);
+  player = new Eel(canvasW / 2, canvasH / 2, 40, 40, "red", EntityType.PLAYER);
   for(let i = -400; i <1200 ; i+=100) {
     let nPrey = new Prey(getRandomInt(-canvasW, canvasW * 2), i, 20, 20, "green", EntityType.PREY);
   }
-  predator = new Predator(900, 900, 20, 20, "orange", EntityType.PREDATOR);
+  predator = new Predator(600, 600, 20, 20, "orange", EntityType.PREDATOR);
 
   handleKeyInput();
   setMouseEvent();
@@ -47,10 +47,10 @@ function gameLoop(timestamp) {
 
 function updatePhysic() {
   player.update();
-  // prey.wander();
-  // prey.update();
-  predator.seek(player.location);
-  predator.updateTriangle();
+
+  predator.wanderOrSeek(player.position);
+  predator.update();
+
   for (let i = 0; i < entityCollection.length; i++) {
     if(entityCollection[i].type === EntityType.PREY) {
       entityCollection[i].wander();
@@ -70,7 +70,7 @@ function draw() {
       entityCollection[i].display();
     }
   }
-  predator.displayTriangle();
+  predator.display();
   displayMapBorder();
   displayPerformance();
   pop();
@@ -85,17 +85,37 @@ function displayMapBorder() {
   ctx.closePath();
 }
 
+function displayPerformance() {
+  mouseX.innerText = `mX: ${Math.round(mouse.x)}`
+  mouseY.innerText = `mY: ${Math.round(mouse.y)}`
+  fpsSpan.innerText = `FPS: ${fps}`
+  xSpan.innerText = `X: ${Math.round(player.position.x)}`
+  ySpan.innerText = `Y: ${Math.round(player.position.y)}`
+}
+
 function handleKeyInput() {
-  window.addEventListener('keydown', function(event) {
-    if(event.code == "Space") {    
+  canvas.addEventListener('mousedown', function(event) {
+    if(event.which === 1) {
       player.isMoveable = false;
     }
   })
-  window.addEventListener('keyup', function(event) {
-    if(event.code == "Space") {
-      player.isMoveable = true;   
+
+  canvas.addEventListener('mouseup', function(event) {
+    if(event.which === 1) {
+      player.isMoveable = true;
     }
   })
+
+  // window.addEventListener('keydown', function(event) {
+  //   if(event.code == "Space") {    
+  //     player.isMoveable = false;
+  //   }
+  // })
+  // window.addEventListener('keyup', function(event) {
+  //   if(event.code == "Space") {
+  //     player.isMoveable = true;   
+  //   }
+  // })
 }
 
 function setMouseEvent() {
@@ -106,14 +126,6 @@ function setMouseEvent() {
   canvas.addEventListener("contextmenu", function(event) {
     event.preventDefault();
   });
-}
-
-function displayPerformance() {
-  mouseX.innerText = `mX: ${Math.round(mouse.x)}`
-  mouseY.innerText = `mY: ${Math.round(mouse.y)}`
-  fpsSpan.innerText = `FPS: ${fps}`
-  xSpan.innerText = `X: ${Math.round(player.location.x)}`
-  ySpan.innerText = `Y: ${Math.round(player.location.y)}`
 }
 
 function getMousePosition() {
@@ -136,7 +148,7 @@ const PredatorState = {
 
 class Entity {
   constructor(x, y, w, h, color, type) {
-    this.location = new Vector(x, y);
+    this.position = new Vector(x, y);
     this.velocity = new Vector();
     this.width = w;
     this.height = h;
@@ -162,18 +174,17 @@ class Entity {
   }
 
   checkBoundaries() {
-    //check for boundaries
-    if (this.location.x <= -canvasW) {
-      this.location.x = -canvasW;
+    if (this.position.x <= -canvasW) {
+      this.velocity.multiply(-1);
     }
-    if(this.location.x >= canvasW * 2) {
-      this.location.x = canvasW * 2;
+    if(this.position.x >= canvasW * 2) {
+      this.velocity.multiply(-1);
     }
-    if(this.location.y <= -canvasH) {
-      this.location.y = -canvasH;
+    if(this.position.y <= -canvasH) {
+      this.velocity.multiply(-1);
     }
-    if (this.location.y >= canvasH * 2) {
-      this.location.y = canvasH * 2;
+    if (this.position.y >= canvasH * 2) {
+      this.velocity.multiply(-1);
     }
   }
 }
@@ -186,11 +197,11 @@ class Eel extends Entity {
   }
   
   update() {
-    // this.rotationAngle = Vector.getAngle(mouse, this.location);
+    // this.rotationAngle = Vector.getAngle(mouse, this.position);
     if(this.isMoveable) {
       let directionV = new Vector(mouse.x - canvasW/2, mouse.y - canvasH/2).normalize();
       directionV.multiply(6);
-      this.location.add(directionV);
+      this.position.add(directionV);
     }
 
     for (let i = 0; i < entityCollection.length; i++) {
@@ -205,26 +216,42 @@ class Eel extends Entity {
 
   display() {
     // ctx.rotate(this.rotationAngle);
-    ctx.translate(canvasW/2 - player.location.x, canvasH /2 - player.location.y);
+    ctx.translate(canvasW/2 - player.position.x, canvasH /2 - player.position.y);
     ctx.beginPath();
-    ctx.rect(this.location.x - this.width/2, this.location.y - this.height/2, this.width, this.height);
+    ctx.rect(this.position.x - this.width/2, this.position.y - this.height/2, this.width, this.height);
     ctx.fillStyle = this.color;
     ctx.fill();
     ctx.closePath();
   }
 
   checkCollision(entity) {
-    if (entity.location.x > this.location.x + this.width ||
-        this.location.x > entity.location.x + entity.width ||
-        entity.location.y > this.height + this.location.y ||
-        this.location.y > entity.height + entity.location.y)
+    if (entity.position.x > this.position.x + this.width ||
+        this.position.x > entity.position.x + entity.width ||
+        entity.position.y > this.height + this.position.y ||
+        this.position.y > entity.height + entity.position.y)
     {
       this.isColliding = false;
     }
     else {
       this.isColliding = true;
       entity.isColliding = true;
-      console.log(`player at: ${JSON.stringify(this.location)} colliding with entity at: ${JSON.stringify(entity.location)}`);
+      // console.log(`player at: ${JSON.stringify(this.position)} colliding with entity at: ${JSON.stringify(entity.position)}`);
+    }
+  }
+
+  checkBoundaries() {
+    //check for boundaries
+    if (this.position.x <= -canvasW) {
+      this.position.x = -canvasW;
+    }
+    if(this.position.x >= canvasW * 2) {
+      this.position.x = canvasW * 2;
+    }
+    if(this.position.y <= -canvasH) {
+      this.position.y = -canvasH;
+    }
+    if (this.position.y >= canvasH * 2) {
+      this.position.y = canvasH * 2;
     }
   }
 }
@@ -233,7 +260,6 @@ class Prey extends Entity {
   constructor(x, y, w, h, color, type) {
     super(x, y, w, h, color, type);
     this.rotationAngle = 0
-    this.velocity = new Vector(0,0);
     this.acceleration = new Vector(0,0);
     this.maxSpeed = 4;
     this.maxForce = 0.2;
@@ -242,14 +268,12 @@ class Prey extends Entity {
     this.wanderTheta = Math.PI / 2;
   }
 
-
-
   wander() {
     let force = new Vector(getRandomInt(-1,1),getRandomInt(-1,1));
     this.applyForce(force.multiply(.1));
-    // let wanderPoint = this.location.clone();
+    // let wanderPoint = this.position.clone();
     // wanderPoint.setMag(100);
-    // wanderPoint.add(this.location);
+    // wanderPoint.add(this.position);
     // ctx.beginPath();
     // ctx.fillStyle = "blue"
     // ctx.arc(wanderPoint.x, wanderPoint.y, 4, 0, 2 * Math.PI);
@@ -272,7 +296,7 @@ class Prey extends Entity {
     // ctx.arc(wanderPoint.x, wanderPoint.y, 8, 0, 2 * Math.PI);
     // ctx.fill();
 
-    // let steer = wanderPoint.subtract(this.location);
+    // let steer = wanderPoint.subtract(this.position);
     // steer.setMag(this.maxForce);
     // this.applyForce(steer);
 
@@ -280,25 +304,10 @@ class Prey extends Entity {
     // this.wanderTheta += getRandomInt(-displaceRange, displaceRange);
   }
 
-  checkBoundaries() {
-    if (this.location.x <= -canvasW) {
-      this.velocity.multiply(-1);
-    }
-    if(this.location.x >= canvasW * 2) {
-      this.velocity.multiply(-1);
-    }
-    if(this.location.y <= -canvasH) {
-      this.velocity.multiply(-1);
-    }
-    if (this.location.y >= canvasH * 2) {
-      this.velocity.multiply(-1);
-    }
-  }
-
   update() {
     this.velocity.add(this.acceleration);
     this.velocity.limit(this.maxSpeed);
-    this.location.add(this.velocity);
+    this.position.add(this.velocity);
     this.acceleration.set(0, 0);
     // console.log(this.velocity)
     this.checkBoundaries();
@@ -306,7 +315,7 @@ class Prey extends Entity {
 
   display() {
     ctx.beginPath();
-    ctx.rect(this.location.x, this.location.y, this.width, this.height);
+    ctx.rect(this.position.x, this.position.y, this.width, this.height);
     ctx.fillStyle = this.color;
     ctx.fill(); 
   }
@@ -316,54 +325,88 @@ class Predator extends Entity {
   constructor(x, y, w, h, color, type) {
     super(x, y, w, h, color, type);
     this.rotationAngle = 0
-    this.velocity = new Vector(0,0);
     this.acceleration = new Vector(0,0);
     this.maxSpeed = 4;
     this.maxForce = 0.2;
     this.r = 6
+    this.state = PredatorState.WANDERING;
   }
 
   update() {
     this.velocity.add(this.acceleration);
-    this.location.add(this.velocity);
+    this.velocity.limit(this.maxSpeed);
+    this.position.add(this.velocity);
+    this.acceleration.set(0, 0);
+
+    this.checkBoundaries();
   }
 
   display() {
-    ctx.beginPath();
-    ctx.rect(this.location.x, this.location.y, this.width, this.height);
-    ctx.fillStyle = this.color;
-    ctx.fill();
-  }
-
-  seek(target) { 
-    let force = Vector.subVector(target, this.location);
-    force.setMag(this.maxSpeed);
-    force.subtract(this.velocity)
-    force.limit(this.maxForce);
-    this.applyForce(force);
-  }
-
-  updateTriangle() {
-    this.velocity.add(this.acceleration);
-    this.velocity.limit(this.maxSpeed);
-    this.location.add(this.velocity);
-    this.acceleration.set(0,0);
-  }
-
-  displayTriangle() {
     push();
-    ctx.translate(this.location.x, this.location.y)
+    ctx.translate(this.position.x, this.position.y)
     ctx.rotate(Vector.getVelocityAngle(this.velocity))
     ctx.strokeStyle = "black" 
     triangle(-this.r, -this.r/2, -this.r, this.r/2, this.r, 0)
     pop();
+    
+    //temporary debug circle
+    this.displayRadius();
+  }
+
+  huntForPlayer(target) {
+    let targetDistance = this.position.distanceTo(target)
+    // check if player is inside the radius of the predator
+    if(this.state == PredatorState.WANDERING && targetDistance < this.r * 40) {
+      this.state = PredatorState.SEEKING;
+      // console.log(`Changed state to ${this.state}: distance from predator to player ${targetDistance}`)
+    } else if (targetDistance > (this.r * 40) * 1.5) {
+      this.state = PredatorState.WANDERING;
+    }
+  }
+
+  wander() {
+    let force = new Vector(getRandomInt(-1,1),getRandomInt(-1,1));
+    this.applyForce(force.multiply(.2));
+  }
+
+  wanderOrSeek(target) {
+    this.huntForPlayer(target);
+
+    if(this.state === PredatorState.WANDERING) {
+      this.wander();
+    } else if(this.state == PredatorState.SEEKING) {
+      this.applyForce(this.seek(target));
+    }
+  }
+
+  flee(target) {
+    return this.seek(target).multiply(-1);
+  }
+
+  seek(target) { 
+    let force = Vector.subVector(target, this.position);
+    force.setMag(this.maxSpeed);
+    force.subtract(this.velocity)
+    force.limit(this.maxForce);
+    return force;
+  }
+
+  displayRadius() {
+    ctx.beginPath();
+    ctx.strokeStyle = "red"
+    ctx.lineWidth = 2;
+    ctx.arc(this.position.x, this.position.y, this.r * 40, 0, 2 * Math.PI);
+    ctx.fillStyle = "rgba(165, 40, 40, 0.12)"
+    ctx.fill();
+    ctx.stroke();
+    ctx.closePath();
   }
 }
 
 function getRandomInt(min, max) {
   min = Math.ceil(min);
   max = Math.floor(max);
-  return Math.floor(Math.random() * (max - min + 1) + min); // The maximum is inclusive and the minimum is inclusive
+  return Math.floor(Math.random() * (max - min + 1) + min);
 }
 
 function push() {
