@@ -17,16 +17,43 @@ let predator;
 let entityCollection = [];
 let lastTimestamp = 0;
 let fps;
+let oneFish;
+const backgroundImage = new Image();
+
+const spriteAnimations = [];
+const animationStates = [
+  {
+    name: 'wandering',
+    frames: 4
+  }
+];
+
+//handle sprite animations
+function assignSpriteAnimations(w, h) {
+  animationStates.forEach((state, index) => {
+    let frames = {
+      loc: [],
+    }
+    for (let j = 0; j < state.frames; j++) {
+      let positionX = j * w;
+      let positionY = index * h;
+      frames.loc.push({x: positionX, y: positionY});
+    }
+    spriteAnimations[state.name] = frames;
+  })
+}
 
 window.onload = init;
 
 function init() {
+  backgroundImage.src = './sprite/gametile.png';
   mouse = new Vector(0,0);
   player = new Eel(canvasW / 2, canvasH / 2, 40, 40, "red", EntityType.PLAYER);
   for(let i = -400; i <1200 ; i+=100) {
     let nPrey = new Prey(getRandomInt(-canvasW, canvasW * 2), i, 20, 20, "green", EntityType.PREY);
   }
-  predator = new Predator(600, 600, 20, 20, "orange", EntityType.PREDATOR);
+  predator = new Predator(350, 350, 20, 20, "orange", EntityType.PREDATOR);
+  oneFish = new Fish(350,350, 24, 24);
 
   handleKeyInput();
   setMouseEvent();
@@ -50,6 +77,8 @@ function updatePhysic() {
 
   predator.wanderOrSeek(player.position);
   predator.update();
+  oneFish.wander();
+  oneFish.update();
 
   for (let i = 0; i < entityCollection.length; i++) {
     if(entityCollection[i].type === EntityType.PREY) {
@@ -61,7 +90,13 @@ function updatePhysic() {
 
 function draw() {
   ctx.clearRect(0, 0, canvasW, canvasH);
+  
   push();
+  const ptrn = ctx.createPattern(backgroundImage, 'repeat'); // Create a pattern with this image, and set it to "repeat".
+  ctx.fillStyle = ptrn;
+  ctx.fillRect(0, 0, canvasW, canvasH);
+  ctx.fillStyle = "rgba(12, 12, 106, 0.32)"
+  ctx.fillRect(0, 0, canvasW, canvasH);
   player.display();
   
   // prey.display();
@@ -71,6 +106,7 @@ function draw() {
     }
   }
   predator.display();
+  oneFish.display();
   displayMapBorder();
   displayPerformance();
   pop();
@@ -94,28 +130,11 @@ function displayPerformance() {
 }
 
 function handleKeyInput() {
-  canvas.addEventListener('mousedown', function(event) {
-    if(event.which === 1) {
-      player.isMoveable = false;
+  canvas.addEventListener('click', function(event) {
+    if(event.button === 0) {
+      player.isMoveable = !player.isMoveable;
     }
   })
-
-  canvas.addEventListener('mouseup', function(event) {
-    if(event.which === 1) {
-      player.isMoveable = true;
-    }
-  })
-
-  // window.addEventListener('keydown', function(event) {
-  //   if(event.code == "Space") {    
-  //     player.isMoveable = false;
-  //   }
-  // })
-  // window.addEventListener('keyup', function(event) {
-  //   if(event.code == "Space") {
-  //     player.isMoveable = true;   
-  //   }
-  // })
 }
 
 function setMouseEvent() {
@@ -150,6 +169,7 @@ class Entity {
   constructor(x, y, w, h, color, type) {
     this.position = new Vector(x, y);
     this.velocity = new Vector();
+    this.acceleration = new Vector(0,0);
     this.width = w;
     this.height = h;
     this.color = color;
@@ -165,25 +185,15 @@ class Entity {
     this.acceleration.add(force);
   }
 
-  update() {
-
-  }
-
-  display() {
-    
-  }
-
   checkBoundaries() {
     if (this.position.x <= -canvasW) {
       this.velocity.multiply(-1);
-    }
-    if(this.position.x >= canvasW * 2) {
+    } else if (this.position.x >= canvasW * 2) {
       this.velocity.multiply(-1);
     }
-    if(this.position.y <= -canvasH) {
+    if (this.position.y <= -canvasH) {
       this.velocity.multiply(-1);
-    }
-    if (this.position.y >= canvasH * 2) {
+    } else if (this.position.y >= canvasH * 2) {
       this.velocity.multiply(-1);
     }
   }
@@ -235,7 +245,6 @@ class Eel extends Entity {
     else {
       this.isColliding = true;
       entity.isColliding = true;
-      // console.log(`player at: ${JSON.stringify(this.position)} colliding with entity at: ${JSON.stringify(entity.position)}`);
     }
   }
 
@@ -260,7 +269,6 @@ class Prey extends Entity {
   constructor(x, y, w, h, color, type) {
     super(x, y, w, h, color, type);
     this.rotationAngle = 0
-    this.acceleration = new Vector(0,0);
     this.maxSpeed = 4;
     this.maxForce = 0.2;
     this.r = 6
@@ -269,39 +277,8 @@ class Prey extends Entity {
   }
 
   wander() {
-    let force = new Vector(getRandomInt(-1,1),getRandomInt(-1,1));
+    let force = new Vector(getRandomNumber(-0.8,0.8),getRandomNumber(-0.8,0.8));
     this.applyForce(force.multiply(.1));
-    // let wanderPoint = this.position.clone();
-    // wanderPoint.setMag(100);
-    // wanderPoint.add(this.position);
-    // ctx.beginPath();
-    // ctx.fillStyle = "blue"
-    // ctx.arc(wanderPoint.x, wanderPoint.y, 4, 0, 2 * Math.PI);
-    // ctx.fill();
-    // ctx.closePath();
-
-    // let wanderRadius = 32
-    // ctx.beginPath();
-    // ctx.arc(wanderPoint.x, wanderPoint.y, wanderRadius, 0, 2 * Math.PI);
-    // ctx.stroke();
-
-    // console.log(getAngle(this.velocity));
-    // let theta = this.wanderTheta + getAngle(this.velocity);
-
-    // let x = wanderRadius * Math.cos(theta);
-    // let y = wanderRadius * Math.sin(theta);
-    // wanderPoint.add(new Vector(x, y));
-    // ctx.beginPath();
-    // ctx.fillStyle = "green"
-    // ctx.arc(wanderPoint.x, wanderPoint.y, 8, 0, 2 * Math.PI);
-    // ctx.fill();
-
-    // let steer = wanderPoint.subtract(this.position);
-    // steer.setMag(this.maxForce);
-    // this.applyForce(steer);
-
-    // let displaceRange = 0.3;
-    // this.wanderTheta += getRandomInt(-displaceRange, displaceRange);
   }
 
   update() {
@@ -309,7 +286,6 @@ class Prey extends Entity {
     this.velocity.limit(this.maxSpeed);
     this.position.add(this.velocity);
     this.acceleration.set(0, 0);
-    // console.log(this.velocity)
     this.checkBoundaries();
   }
 
@@ -321,15 +297,96 @@ class Prey extends Entity {
   }
 }
 
+class Fish extends Entity {
+  constructor(x, y, w, h) {
+    super(x, y, w, h)
+    this.rotationAngle = 0
+    this.maxSpeed = 2;
+    this.maxForce = 0.05;
+    this.sprite;
+    this.col = 0;
+    this.row = 0;
+    this.frameW = 24;
+    this.frameH = 24;
+    this.loadImg();
+    this.r = 6
+    this.elapsedFrames = 0;
+
+    this.wanderTheta = Math.PI/ 2;
+  }
+
+  loadImg() {
+    if(!this.sprite) {
+      console.log(`loading image`);
+      this.sprite = new Image();
+
+      this.sprite.onload = () => {
+        this.width = this.sprite.width;
+        this.height = this.sprite.height;
+      }
+
+      this.sprite.src = './sprite/fish.png';
+    }
+  }
+
+  wander() {
+    // let force = new Vector(getRandomNumber(-0.8,0.8),getRandomNumber(-0.8,0.8));
+    // this.applyForce(force.multiply(.1));
+
+    let wanderPoint = this.velocity.clone();
+    wanderPoint.setMag(150);
+    let wanderRadius = 30
+
+    let theta = this.wanderTheta + Vector.getVelocityAngle(this.velocity);
+    let x = wanderRadius * Math.cos(theta);
+    let y = wanderRadius * Math.sin(theta);
+    wanderPoint.add(new Vector(x, y));
+
+    wanderPoint.setMag(this.maxForce);
+    this.applyForce(wanderPoint);
+   
+    let displaceRange = 0.2;
+    this.wanderTheta += getRandomNumber(-displaceRange, displaceRange);
+  }
+
+  update() {
+    this.velocity.add(this.acceleration);
+    this.velocity.limit(this.maxSpeed);
+    this.position.add(this.velocity);
+    this.rotationAngle = 180 * Vector.getVelocityAngle(this.velocity) / Math.PI;
+    this.acceleration.set(0, 0);
+    this.checkBoundaries();
+  }
+
+  display() {
+    this.elapsedFrames++;
+    push();
+    ctx.translate(this.position.x, this.position.y)
+    ctx.rotate(Math.PI / 180 * (this.rotationAngle + 90));
+    ctx.translate(-this.position.x, -this.position.y)
+    ctx.drawImage(this.sprite, this.col * this.frameW, 
+      this.row * this.frameH, this.frameW, this.frameH, 
+      this.position.x, this.position.y, this.frameW * 1.25, this.frameH * 1.25);
+    // ctx.drawImage(this.sprite, this.position.x, this.position.y, this.width, this.height);    
+    // ctx.drawImage(this.sprite, this.col * this.frameW, this.row * this.frameH, this.frameW, this.frameH, this.position.x, this.position.y, this.frameW, this.frameH);
+    pop();
+  }
+}
+
+const variableToString = varObj => Object.keys(varObj)[0]
+function log(variable, data) {
+  console.log(`${variable} value is: ${JSON.stringify(data)}`)
+}
+
 class Predator extends Entity {
   constructor(x, y, w, h, color, type) {
     super(x, y, w, h, color, type);
     this.rotationAngle = 0
-    this.acceleration = new Vector(0,0);
-    this.maxSpeed = 4;
-    this.maxForce = 0.2;
+    this.maxSpeed = 2;
+    this.maxForce = 0.1;
     this.r = 6
     this.state = PredatorState.WANDERING;
+    this.wanderTheta = Math.PI/ 2;
   }
 
   update() {
@@ -338,7 +395,7 @@ class Predator extends Entity {
     this.position.add(this.velocity);
     this.acceleration.set(0, 0);
 
-    this.checkBoundaries();
+    this.checkBoundaries(); 
   }
 
   display() {
@@ -358,19 +415,47 @@ class Predator extends Entity {
     // check if player is inside the radius of the predator
     if(this.state == PredatorState.WANDERING && targetDistance < this.r * 40) {
       this.state = PredatorState.SEEKING;
-      // console.log(`Changed state to ${this.state}: distance from predator to player ${targetDistance}`)
     } else if (targetDistance > (this.r * 40) * 1.5) {
       this.state = PredatorState.WANDERING;
     }
   }
 
+  //fix the fact that the predator is always going towards the same trajectory
   wander() {
-    let force = new Vector(getRandomInt(-1,1),getRandomInt(-1,1));
-    this.applyForce(force.multiply(.2));
+    // let force = new Vector(getRandomInt(-1,1),getRandomInt(-1,1));
+    // this.applyForce(force.multiply(.2));
+
+    let wanderPoint = this.velocity.clone();
+    wanderPoint.setMag(100);
+    // ctx.beginPath();
+    // ctx.fillStyle = "blue"
+    // ctx.arc(wanderPoint.x, wanderPoint.y, 8, 0, 2 * Math.PI);
+    // ctx.fill();
+    // ctx.closePath();
+    let wanderRadius = 30
+    // ctx.beginPath();
+    // ctx.arc(wanderPoint.x, wanderPoint.y, wanderRadius, 0, 2 * Math.PI);
+    // ctx.stroke();
+
+    let theta = this.wanderTheta + Vector.getVelocityAngle(this.velocity);
+    let x = wanderRadius * Math.cos(theta);
+    let y = wanderRadius * Math.sin(theta);
+    wanderPoint.add(new Vector(x, y));
+
+    // ctx.beginPath();
+    // ctx.fillStyle = "green"
+    // ctx.arc(wanderPoint.x, wanderPoint.y, 8, 0, 2 * Math.PI);
+    // ctx.fill();
+
+    wanderPoint.setMag(this.maxForce);
+    this.applyForce(wanderPoint);
+   
+    let displaceRange = 0.2;
+    this.wanderTheta += getRandomNumber(-displaceRange, displaceRange);
   }
 
   wanderOrSeek(target) {
-    this.huntForPlayer(target);
+    this.huntForPlayer(target)
 
     if(this.state === PredatorState.WANDERING) {
       this.wander();
@@ -407,6 +492,10 @@ function getRandomInt(min, max) {
   min = Math.ceil(min);
   max = Math.floor(max);
   return Math.floor(Math.random() * (max - min + 1) + min);
+}
+
+function getRandomNumber(min, max) {
+  return Math.random() * (max - min) + min;
 }
 
 function push() {
