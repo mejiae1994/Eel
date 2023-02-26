@@ -17,48 +17,33 @@ let predator;
 let entityCollection = [];
 let lastTimestamp = 0;
 let fps;
-let oneFish;
+// let oneFish;
 const backgroundImage = new Image();
 
-const spriteAnimations = [];
-const animationStates = [
-  {
-    name: 'wandering',
-    frames: 4
-  }
-];
-
-//handle sprite animations
-function assignSpriteAnimations(w, h) {
-  animationStates.forEach((state, index) => {
-    let frames = {
-      loc: [],
-    }
-    for (let j = 0; j < state.frames; j++) {
-      let positionX = j * w;
-      let positionY = index * h;
-      frames.loc.push({x: positionX, y: positionY});
-    }
-    spriteAnimations[state.name] = frames;
-  })
+const spriteUrl = {
+  background: "./sprite/gametile.png",
+  fish: "./sprite/fish.png",
+  shark: "./sprite/shark.png"
 }
 
 window.onload = init;
 
 function init() {
-  backgroundImage.src = './sprite/gametile.png';
+  backgroundImage.src = spriteUrl.background;
+
   mouse = new Vector(0,0);
-  player = new Eel(canvasW / 2, canvasH / 2, 40, 40, "red", EntityType.PLAYER);
+  player = new Eel(canvasW / 2, canvasH / 2, 40, 40, EntityType.PLAYER, "red");
+
   for(let i = -400; i <1200 ; i+=100) {
-    let nPrey = new Prey(getRandomInt(-canvasW, canvasW * 2), i, 20, 20, "green", EntityType.PREY);
+    let oneFish = new Fish(getRandomInt(-canvasW, canvasW * 2), i, 24, 24, EntityType.PREY, spriteUrl.fish);
   }
-  predator = new Predator(350, 350, 20, 20, "orange", EntityType.PREDATOR);
-  oneFish = new Fish(350,350, 24, 24);
+  predator = new Predator(350, 350, 48, 64, EntityType.PREDATOR, spriteUrl.shark);
 
   handleKeyInput();
   setMouseEvent();
   getMousePosition();
-  window.requestAnimationFrame(gameLoop);
+  // window.requestAnimationFrame(gameLoop);
+  gameLoop();
 }
 
 function gameLoop(timestamp) {
@@ -77,8 +62,8 @@ function updatePhysic() {
 
   predator.wanderOrSeek(player.position);
   predator.update();
-  oneFish.wander();
-  oneFish.update();
+  // oneFish.wander();
+  // oneFish.update();
 
   for (let i = 0; i < entityCollection.length; i++) {
     if(entityCollection[i].type === EntityType.PREY) {
@@ -92,12 +77,8 @@ function draw() {
   ctx.clearRect(0, 0, canvasW, canvasH);
   
   push();
-  const ptrn = ctx.createPattern(backgroundImage, 'repeat'); // Create a pattern with this image, and set it to "repeat".
-  ctx.fillStyle = ptrn;
-  ctx.fillRect(0, 0, canvasW, canvasH);
-  ctx.fillStyle = "rgba(12, 12, 106, 0.32)"
-  ctx.fillRect(0, 0, canvasW, canvasH);
   player.display();
+  displayBackground();
   
   // prey.display();
   for (let i = 0; i < entityCollection.length; i++) {
@@ -106,10 +87,30 @@ function draw() {
     }
   }
   predator.display();
-  oneFish.display();
+  // oneFish.display();
+  
   displayMapBorder();
   displayPerformance();
+  
   pop();
+}
+
+function darken() {
+  ctx.fillStyle = "black";
+  ctx.globalAlpha = 0.2;
+  ctx.fillRect(-canvasW - 20, - canvasH - 20, canvasW * 3 + 45, canvasH * 3 + 40);
+  ctx.globalAlpha = 1;
+}
+
+function displayBackground() {
+  const ptrn = ctx.createPattern(backgroundImage, 'repeat'); // Create a pattern with this image, and set it to "repeat".
+  ctx.globalCompositeOperation = "destination-over";
+  ctx.fillStyle = ptrn;
+  ctx.fillRect(-canvasW - 20, - canvasH - 20, canvasW * 3 + 45, canvasH * 3 + 40);
+  ctx.globalCompositeOperation = "source-over";
+  ctx.fillStyle = "rgba(12, 12, 106, 0.32)"
+  ctx.fillRect(-canvasW - 20, - canvasH - 20, canvasW * 3 + 45, canvasH * 3 + 40);
+  // darken();
 }
 
 function displayMapBorder() {
@@ -166,12 +167,14 @@ const PredatorState = {
 }
 
 class Entity {
-  constructor(x, y, w, h, color, type) {
+  constructor(x, y, w, h, type, color) {
     this.position = new Vector(x, y);
     this.velocity = new Vector();
     this.acceleration = new Vector(0,0);
+    this.rotationAngle = 0
     this.width = w;
     this.height = h;
+    this.sprite;
     this.color = color;
     this.type = type;
     this.isColliding = false;
@@ -200,8 +203,8 @@ class Entity {
 }
 
 class Eel extends Entity {
-  constructor(x, y, w, h, color, type) {
-    super(x, y, w, h, color, type);
+  constructor(x, y, w, h, type, color) {
+    super(x, y, w, h, type, color);
     this.rotationAngle = 0;
     this.isMoveable = true;
   }
@@ -265,68 +268,53 @@ class Eel extends Entity {
   }
 }
 
-class Prey extends Entity {
-  constructor(x, y, w, h, color, type) {
-    super(x, y, w, h, color, type);
-    this.rotationAngle = 0
-    this.maxSpeed = 4;
-    this.maxForce = 0.2;
-    this.r = 6
-
-    this.wanderTheta = Math.PI / 2;
-  }
-
-  wander() {
-    let force = new Vector(getRandomNumber(-0.8,0.8),getRandomNumber(-0.8,0.8));
-    this.applyForce(force.multiply(.1));
-  }
-
-  update() {
-    this.velocity.add(this.acceleration);
-    this.velocity.limit(this.maxSpeed);
-    this.position.add(this.velocity);
-    this.acceleration.set(0, 0);
-    this.checkBoundaries();
-  }
-
-  display() {
-    ctx.beginPath();
-    ctx.rect(this.position.x, this.position.y, this.width, this.height);
-    ctx.fillStyle = this.color;
-    ctx.fill(); 
-  }
-}
-
 class Fish extends Entity {
-  constructor(x, y, w, h) {
-    super(x, y, w, h)
-    this.rotationAngle = 0
+  constructor(x, y, w, h, type, imgSrc) {
+    super(x, y, w, h, type)
     this.maxSpeed = 2;
     this.maxForce = 0.05;
-    this.sprite;
+    this.imageSrc = imgSrc;
     this.col = 0;
     this.row = 0;
-    this.frameW = 24;
-    this.frameH = 24;
-    this.loadImg();
     this.r = 6
-    this.elapsedFrames = 0;
-
     this.wanderTheta = Math.PI/ 2;
+    this.elapsedFrames = 0;
+    this.frameBufer = 6;
+    
+    
+    this.spriteAnimation = [];
+    this.animationState = [
+      {
+        name: 'wandering',
+        frames: 4
+      }
+    ];
+    this.loadImg();
+
   }
 
   loadImg() {
     if(!this.sprite) {
-      console.log(`loading image`);
       this.sprite = new Image();
 
-      this.sprite.onload = () => {
-        this.width = this.sprite.width;
-        this.height = this.sprite.height;
-      }
-
-      this.sprite.src = './sprite/fish.png';
+      this.sprite.src = this.imageSrc;
+      this.assignSpriteAnimation();
     }
+  }
+
+  //handle sprite animations
+  assignSpriteAnimation() {
+    this.animationState.forEach((state, index) => {
+      let frames = {
+        loc: [],
+      }
+      for (let j = 0; j < state.frames; j++) {
+        let positionX = j * this.width;
+        let positionY = index * this.height;
+        frames.loc.push({x: positionX, y: positionY});
+      }
+      this.spriteAnimation[state.name] = frames;
+    })
   }
 
   wander() {
@@ -350,6 +338,7 @@ class Fish extends Entity {
   }
 
   update() {
+    this.animate();
     this.velocity.add(this.acceleration);
     this.velocity.limit(this.maxSpeed);
     this.position.add(this.velocity);
@@ -358,56 +347,105 @@ class Fish extends Entity {
     this.checkBoundaries();
   }
 
+  animate() {
+    let position = Math.floor(this.elapsedFrames/this.frameBufer) % this.spriteAnimation["wandering"].loc.length;
+    this.row = this.width * position;
+    this.col = this.spriteAnimation["wandering"].loc[position].y
+  }
+
   display() {
-    this.elapsedFrames++;
     push();
     ctx.translate(this.position.x, this.position.y)
     ctx.rotate(Math.PI / 180 * (this.rotationAngle + 90));
     ctx.translate(-this.position.x, -this.position.y)
-    ctx.drawImage(this.sprite, this.col * this.frameW, 
-      this.row * this.frameH, this.frameW, this.frameH, 
-      this.position.x, this.position.y, this.frameW * 1.25, this.frameH * 1.25);
-    // ctx.drawImage(this.sprite, this.position.x, this.position.y, this.width, this.height);    
-    // ctx.drawImage(this.sprite, this.col * this.frameW, this.row * this.frameH, this.frameW, this.frameH, this.position.x, this.position.y, this.frameW, this.frameH);
+    ctx.drawImage(this.sprite, this.row, 
+      this.col, this.width, this.height, 
+      this.position.x, this.position.y, this.width * 1.25, this.height * 1.25);
     pop();
+    this.elapsedFrames++;
   }
 }
 
-const variableToString = varObj => Object.keys(varObj)[0]
-function log(variable, data) {
-  console.log(`${variable} value is: ${JSON.stringify(data)}`)
-}
-
 class Predator extends Entity {
-  constructor(x, y, w, h, color, type) {
-    super(x, y, w, h, color, type);
-    this.rotationAngle = 0
+  constructor(x, y, w, h, type, imgSrc) {
+    super(x, y, w, h, type);
+    this.imageSrc = imgSrc;
     this.maxSpeed = 2;
     this.maxForce = 0.1;
     this.r = 6
     this.state = PredatorState.WANDERING;
     this.wanderTheta = Math.PI/ 2;
+    this.col = 0;
+    this.row = 0;
+    this.elapsedFrames = 0;
+    this.frameBufer = 6;
+    
+    
+    this.spriteAnimation = [];
+    this.animationState = [
+      {
+        name: 'wandering',
+        frames: 8
+      }
+    ];
+    this.loadImg();    
+  }
+
+  loadImg() {
+    if(!this.sprite) {
+      this.sprite = new Image();
+
+      this.sprite.src = this.imageSrc;
+      this.assignSpriteAnimation();
+    }
+  }
+
+  //handle sprite animations
+  assignSpriteAnimation() {
+    this.animationState.forEach((state, index) => {
+      let frames = {
+        loc: [],
+      }
+      for (let j = 0; j < state.frames; j++) {
+        let positionX = j * this.width;
+        let positionY = index * this.height;
+        frames.loc.push({x: positionX, y: positionY});
+      }
+      this.spriteAnimation[state.name] = frames;
+    })
   }
 
   update() {
+    this.animate();
     this.velocity.add(this.acceleration);
     this.velocity.limit(this.maxSpeed);
     this.position.add(this.velocity);
+    this.rotationAngle = 180 * Vector.getVelocityAngle(this.velocity) / Math.PI;
     this.acceleration.set(0, 0);
 
     this.checkBoundaries(); 
   }
 
+  animate() {
+    let position = Math.floor(this.elapsedFrames/this.frameBufer) % this.spriteAnimation["wandering"].loc.length;
+    this.row = this.width * position;
+    this.col = this.spriteAnimation["wandering"].loc[position].y
+  }
+
   display() {
     push();
     ctx.translate(this.position.x, this.position.y)
-    ctx.rotate(Vector.getVelocityAngle(this.velocity))
-    ctx.strokeStyle = "black" 
-    triangle(-this.r, -this.r/2, -this.r, this.r/2, this.r, 0)
+    ctx.rotate(Math.PI / 180 * (this.rotationAngle + 90));
+    ctx.translate(-this.position.x, -this.position.y)
+    ctx.drawImage(this.sprite, this.row, 
+      this.col, this.width, this.height, 
+      this.position.x, this.position.y, this.width * 1.5, this.height * 1.5);
     pop();
     
     //temporary debug circle
-    this.displayRadius();
+    // this.displayRadius();
+    
+    this.elapsedFrames++;
   }
 
   huntForPlayer(target) {
@@ -422,30 +460,16 @@ class Predator extends Entity {
 
   //fix the fact that the predator is always going towards the same trajectory
   wander() {
-    // let force = new Vector(getRandomInt(-1,1),getRandomInt(-1,1));
-    // this.applyForce(force.multiply(.2));
 
     let wanderPoint = this.velocity.clone();
     wanderPoint.setMag(100);
-    // ctx.beginPath();
-    // ctx.fillStyle = "blue"
-    // ctx.arc(wanderPoint.x, wanderPoint.y, 8, 0, 2 * Math.PI);
-    // ctx.fill();
-    // ctx.closePath();
+    
     let wanderRadius = 30
-    // ctx.beginPath();
-    // ctx.arc(wanderPoint.x, wanderPoint.y, wanderRadius, 0, 2 * Math.PI);
-    // ctx.stroke();
-
+    
     let theta = this.wanderTheta + Vector.getVelocityAngle(this.velocity);
     let x = wanderRadius * Math.cos(theta);
     let y = wanderRadius * Math.sin(theta);
     wanderPoint.add(new Vector(x, y));
-
-    // ctx.beginPath();
-    // ctx.fillStyle = "green"
-    // ctx.arc(wanderPoint.x, wanderPoint.y, 8, 0, 2 * Math.PI);
-    // ctx.fill();
 
     wanderPoint.setMag(this.maxForce);
     this.applyForce(wanderPoint);
@@ -455,7 +479,7 @@ class Predator extends Entity {
   }
 
   wanderOrSeek(target) {
-    this.huntForPlayer(target)
+    // this.huntForPlayer(target)
 
     if(this.state === PredatorState.WANDERING) {
       this.wander();
@@ -486,6 +510,11 @@ class Predator extends Entity {
     ctx.stroke();
     ctx.closePath();
   }
+}
+
+const variableToString = varObj => Object.keys(varObj)[0]
+function log(variable, data) {
+  console.log(`${variable} value is: ${JSON.stringify(data)}`)
 }
 
 function getRandomInt(min, max) {
