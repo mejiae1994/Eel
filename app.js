@@ -13,17 +13,24 @@ let canvasW = canvas.width;
 let canvasH = canvas.height;
 let player;
 let mouse;
-let predator;
 let entityCollection = [];
 let lastTimestamp = 0;
 let fps;
-// let oneFish;
 const backgroundImage = new Image();
 
 const spriteUrl = {
   background: "./sprite/gametile.png",
   fish: "./sprite/fish.png",
-  shark: "./sprite/shark.png"
+  shark: "./sprite/shark.png",
+  eel: "./sprite/eel.png",
+  egg: "./sprite/egg.png"
+}
+
+const EntityType = {
+  PLAYER: "player",
+  PREY: "prey",
+  PREDATOR: "predator",
+  EGG: "egg"
 }
 
 window.onload = init;
@@ -32,13 +39,20 @@ function init() {
   backgroundImage.src = spriteUrl.background;
 
   mouse = new Vector(0,0);
-  player = new Eel(canvasW / 2, canvasH / 2, 40, 40, EntityType.PLAYER, "red");
+  player = new Eel(canvasW / 2, canvasH / 2, 32, 32, EntityType.PLAYER, spriteUrl.eel);
+
+  for (let i = 0; i < 50; i++) {
+    let theEgg = new Egg(getRandomNumber(-canvasW, canvasW * 2), getRandomNumber(-canvasH, canvasH * 2), 8, 8, EntityType.EGG, spriteUrl.egg);
+  }
 
   for(let i = -400; i <1200 ; i+=100) {
-    let oneFish = new Fish(getRandomInt(-canvasW, canvasW * 2), i, 24, 24, EntityType.PREY, spriteUrl.fish);
+    let oneFish = new Fish(getRandomNumber(-canvasW, canvasW * 2), i, 24, 24, EntityType.PREY, spriteUrl.fish);
   }
-  predator = new Predator(350, 350, 48, 64, EntityType.PREDATOR, spriteUrl.shark);
 
+  for(let i = 0; i < 5; i++) {
+    let predator = new Predator(getRandomNumber(-canvasW, canvasW * 2), getRandomNumber(-canvasH, canvasH * 2), 48, 64, EntityType.PREDATOR, spriteUrl.shark); 
+  }
+  
   handleKeyInput();
   setMouseEvent();
   getMousePosition();
@@ -60,14 +74,13 @@ function gameLoop(timestamp) {
 function updatePhysic() {
   player.update();
 
-  predator.wanderOrSeek(player.position);
-  predator.update();
-  // oneFish.wander();
-  // oneFish.update();
-
   for (let i = 0; i < entityCollection.length; i++) {
     if(entityCollection[i].type === EntityType.PREY) {
       entityCollection[i].wander();
+      entityCollection[i].update();
+    }
+    if(entityCollection[i].type === EntityType.PREDATOR) {
+      entityCollection[i].wanderOrSeek(player.position);
       entityCollection[i].update();
     }
   }
@@ -79,15 +92,12 @@ function draw() {
   push();
   player.display();
   displayBackground();
-  
-  // prey.display();
+
   for (let i = 0; i < entityCollection.length; i++) {
-    if(entityCollection[i].type === EntityType.PREY) {
+    if(entityCollection[i].type !== EntityType.PLAYER) {
       entityCollection[i].display();
     }
   }
-  predator.display();
-  // oneFish.display();
   
   displayMapBorder();
   displayPerformance();
@@ -155,12 +165,6 @@ function getMousePosition() {
   });
 }
 
-const EntityType = {
-  PLAYER: 'player',
-  PREY: 'prey',
-  PREDATOR: 'predator'
-}
-
 const PredatorState = {
   WANDERING: 'wandering',
   SEEKING: 'seeking'
@@ -202,24 +206,68 @@ class Entity {
   }
 }
 
-class Eel extends Entity {
-  constructor(x, y, w, h, type, color) {
-    super(x, y, w, h, type, color);
-    this.rotationAngle = 0;
-    this.isMoveable = true;
+class Egg extends Entity {
+  constructor(x, y, w, h, type, imgSrc) {
+    super(x, y, w, h, type);
+    this.row = 0;
+    this.col = 0;
+    this.imageSrc = imgSrc;
+    this.loadImg();
+  }
+
+  loadImg() {
+    if(!this.sprite) {
+      this.sprite = new Image();
+
+      this.sprite.src = this.imageSrc;
+      // this.assignSpriteAnimation();
+    }
   }
   
+  display() {
+    ctx.drawImage(this.sprite, this.row, 
+    this.col, this.width, this.height, 
+    this.position.x, this.position.y, this.width, this.height);
+  }
+}
+
+class Eel extends Entity {
+  constructor(x, y, w, h, type, imgSrc) {
+    super(x, y, w, h, type);
+    this.isMoveable = true;
+    this.row = 0;
+    this.col = 0;
+    this.maxSpeed = 3;
+    this.maxForce = 0.2;
+    this.imageSrc = imgSrc;
+    this.collectables = [EntityType.PREY, EntityType.EGG];
+
+    this.loadImg();
+  }
+  
+  loadImg() {
+    if(!this.sprite) {
+      this.sprite = new Image();
+
+      this.sprite.src = this.imageSrc;
+      // this.assignSpriteAnimation();
+    }
+  }
+
   update() {
-    // this.rotationAngle = Vector.getAngle(mouse, this.position);
     if(this.isMoveable) {
-      let directionV = new Vector(mouse.x - canvasW/2, mouse.y - canvasH/2).normalize();
-      directionV.multiply(6);
-      this.position.add(directionV);
+      let steer = this.seek(new Vector(mouse.x - canvasW/2, mouse.y - canvasH/2));
+      this.applyForce(steer);
+      this.velocity.add(this.acceleration);
+      this.velocity.limit(this.maxSpeed);
+      this.position.add(this.velocity);
+      this.rotationAngle = 180 * Vector.getVelocityAngle(this.velocity) / Math.PI;
     }
 
     for (let i = 0; i < entityCollection.length; i++) {
       this.checkCollision(entityCollection[i])
-      if(entityCollection[i].isColliding && this.isColliding) {
+      if(this.collectables.includes(entityCollection[i].type) && entityCollection[i].isColliding && this.isColliding) {
+        console.log(entityCollection[i]);
         entityCollection.splice(i, 1);
       }
     }
@@ -227,14 +275,24 @@ class Eel extends Entity {
     this.checkBoundaries();
   }
 
+  seek(force) { 
+    force.setMag(this.maxSpeed);
+    force.subtract(this.velocity)
+    force.limit(this.maxForce);
+    return force;
+  }
+
   display() {
-    // ctx.rotate(this.rotationAngle);
-    ctx.translate(canvasW/2 - player.position.x, canvasH /2 - player.position.y);
-    ctx.beginPath();
-    ctx.rect(this.position.x - this.width/2, this.position.y - this.height/2, this.width, this.height);
-    ctx.fillStyle = this.color;
-    ctx.fill();
-    ctx.closePath();
+    push();
+    ctx.translate(canvasW/2 - (player.position.x), canvasH /2 - (player.position.y));
+    push();
+    ctx.translate(this.position.x + this.width / 2, this.position.y + this.height / 2)
+    ctx.rotate(Math.PI / 180 * (this.rotationAngle + 90));
+    // ctx.translate(-(this.position.x + this.width / 2), -(this.position.y + this.height / 2));
+    ctx.drawImage(this.sprite, this.row, 
+      this.col, this.width, this.height,
+      -this.width /2, - this.height/2, this.width, this.height);
+    pop();
   }
 
   checkCollision(entity) {
@@ -318,9 +376,6 @@ class Fish extends Entity {
   }
 
   wander() {
-    // let force = new Vector(getRandomNumber(-0.8,0.8),getRandomNumber(-0.8,0.8));
-    // this.applyForce(force.multiply(.1));
-
     let wanderPoint = this.velocity.clone();
     wanderPoint.setMag(150);
     let wanderRadius = 30
@@ -360,7 +415,7 @@ class Fish extends Entity {
     ctx.translate(-this.position.x, -this.position.y)
     ctx.drawImage(this.sprite, this.row, 
       this.col, this.width, this.height, 
-      this.position.x, this.position.y, this.width * 1.25, this.height * 1.25);
+      this.position.x, this.position.y, this.width * .75, this.height * .75);
     pop();
     this.elapsedFrames++;
   }
@@ -370,7 +425,7 @@ class Predator extends Entity {
   constructor(x, y, w, h, type, imgSrc) {
     super(x, y, w, h, type);
     this.imageSrc = imgSrc;
-    this.maxSpeed = 2;
+    this.maxSpeed = 2.5;
     this.maxForce = 0.1;
     this.r = 6
     this.state = PredatorState.WANDERING;
@@ -379,7 +434,6 @@ class Predator extends Entity {
     this.row = 0;
     this.elapsedFrames = 0;
     this.frameBufer = 6;
-    
     
     this.spriteAnimation = [];
     this.animationState = [
@@ -434,12 +488,12 @@ class Predator extends Entity {
 
   display() {
     push();
-    ctx.translate(this.position.x, this.position.y)
+    ctx.translate(this.position.x + this.width / 2, this.position.y + this.height /2)
     ctx.rotate(Math.PI / 180 * (this.rotationAngle + 90));
-    ctx.translate(-this.position.x, -this.position.y)
+    // ctx.translate(-(this.position.x + this.width /2), -(this.position.y + this.height /2))
     ctx.drawImage(this.sprite, this.row, 
-      this.col, this.width, this.height, 
-      this.position.x, this.position.y, this.width * 1.5, this.height * 1.5);
+      this.col, this.width, this.height,
+      - this.width / 2, - this.height / 2, this.width , this.height);
     pop();
     
     //temporary debug circle
@@ -479,7 +533,7 @@ class Predator extends Entity {
   }
 
   wanderOrSeek(target) {
-    // this.huntForPlayer(target)
+    this.huntForPlayer(target)
 
     if(this.state === PredatorState.WANDERING) {
       this.wander();
@@ -504,7 +558,7 @@ class Predator extends Entity {
     ctx.beginPath();
     ctx.strokeStyle = "red"
     ctx.lineWidth = 2;
-    ctx.arc(this.position.x, this.position.y, this.r * 40, 0, 2 * Math.PI);
+    ctx.arc(this.position.x + this.width / 2, this.position.y + this.height / 2, this.r * 40, 0, 2 * Math.PI);
     ctx.fillStyle = "rgba(165, 40, 40, 0.12)"
     ctx.fill();
     ctx.stroke();
