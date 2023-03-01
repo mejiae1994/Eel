@@ -1,3 +1,8 @@
+@font-face {
+  font-family: 'pixel';
+  src: url('./font/slkscr.ttf');
+}
+
 body {
   box-sizing: border-box;
   padding: 0;
@@ -59,4 +64,32 @@ body {
   top: 20%;
   left: 50%;
   font-size: x-large;
+}
+
+#egg {
+  display: inline-block;
+  position: absolute;
+  color: orange;
+  z-index: 1;
+  top: 25%;
+  left: 56.5%;
+  font-size: 18px;
+}
+
+#start {
+  
+  font-family: 'pixel', sans-serif;
+  font-size: 30px;
+  display: inline-block;
+  position: absolute;
+  color: rgb(171, 72, 11);
+  z-index: 1;
+  top: 50%;
+  left: 48%;
+  padding: 2px 5px 2px 5px;
+  border-radius: 5%;
+  background-color: aliceblue;
+  border: 1px solid white;
+  cursor: pointer;
+  box-shadow: 0 0 5px;
 }
