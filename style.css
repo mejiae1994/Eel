@@ -25,7 +25,7 @@ body {
   display: inline-block;
   position: absolute;
   z-index: 1;
-  top: 20%;
+  top: 14%;
   left: 56%;
   font-size: x-large;
 }
@@ -34,7 +34,7 @@ body {
   display: inline-block;
   position: absolute;
   z-index: 1;
-  top: 20%;
+  top: 14%;
   left: 60%;
   font-size: x-large;
 }
@@ -43,7 +43,7 @@ body {
   display: inline-block;
   position: absolute;
   z-index: 1;
-  top: 20%;
+  top: 14%;
   left: 37.5%;
   font-size: x-large;
 }
@@ -52,7 +52,7 @@ body {
   display: inline-block;
   position: absolute;
   z-index: 1;
-  top: 20%;
+  top: 14%;
   left: 42%;
   font-size: x-large;
 }
@@ -61,35 +61,48 @@ body {
   display: inline-block;
   position: absolute;
   z-index: 1;
-  top: 20%;
+  top: 14%;
   left: 50%;
   font-size: x-large;
 }
 
 #egg {
-  display: inline-block;
+  display: none;
   position: absolute;
-  color: orange;
+  font-family: 'pixel', sans-serif;
+  color: rgb(171, 72, 11);
   z-index: 1;
-  top: 25%;
+  top: 20%;
   left: 56.5%;
-  font-size: 18px;
+  font-size: 15px;
 }
 
 #start {
-  
+  display: inline-block;
   font-family: 'pixel', sans-serif;
   font-size: 30px;
-  display: inline-block;
   position: absolute;
   color: rgb(171, 72, 11);
   z-index: 1;
   top: 50%;
-  left: 48%;
+  left: 50%;
+  transform: translate(-50%, -50%);
   padding: 2px 5px 2px 5px;
   border-radius: 5%;
   background-color: aliceblue;
   border: 1px solid white;
   cursor: pointer;
   box-shadow: 0 0 5px;
+}
+
+#game {
+  display: none;
+  font-family: 'pixel', sans-serif;
+  font-size: 25px;
+  position: absolute;
+  color: white;
+  z-index: 1;
+  top: 40%;
+  left: 50%;
+  transform: translate(-50%, -50%);
 }
