@@ -11,6 +11,7 @@ const fpsSpan = document.getElementById("fps");
 const eggSpan = document.getElementById("egg");
 const startButton = document.getElementById("start");
 const gameText = document.getElementById("game");
+const levelText = document.getElementById("level");
 
 const matrixStack = [];
 let canvasW = canvas.width;
@@ -29,30 +30,33 @@ const GameState = {
   level: [
     {
       sharkAmount: 2,
-      eggAmount: 1,
+      eggAmount: 5,
       fishAmount: 20,
-      trapAmount: 6,
-      timeLimit: 60
+      trapAmount: 6
     },
     {
       sharkAmount: 4,
-      eggAmount: 1,
+      eggAmount: 10,
       fishAmount: 30,
-      trapAmount: 12,
-      timeLimit: 60
+      trapAmount: 12
     },
     {
       sharkAmount: 6,
-      eggAmount: 1,
+      eggAmount: 15,
       fishAmount: 40,
-      trapAmount: 18,
-      timeLimit: 60
+      trapAmount: 18
     },
     {
       sharkAmount: 8,
-      eggAmount: 1,
+      eggAmount: 20,
       fishAmount: 50,
-      trapAmount: 24,
+      trapAmount: 24
+    },
+    {
+      sharkAmount: 12,
+      eggAmount: 30,
+      fishAmount: 80,
+      trapAmount: 30,
       timeLimit: 60
     }
   ]
@@ -78,11 +82,12 @@ const EntityType = {
 window.onload = () => {
   startButton.addEventListener("click", () => {
     GameState.gameOver = false;
-    GameState.currentLevel = 0;
+    // GameState.currentLevel = 0;
     entityCollection = [];
     init();
     startButton.style.display = "none";
     eggSpan.style.display = "inline-block"
+    levelText.style.display = "inline-block"
     gameText.style.display = "none";
   })
 }
@@ -103,16 +108,39 @@ function init() {
   player = new Eel(canvasW / 2, canvasH / 2, 16, 32, EntityType.PLAYER, spriteUrl.eel);
 
   let currentLevel = GameState.level[GameState.currentLevel]
+  
   for (let i = 0; i < currentLevel.eggAmount; i++) {
-    let egg = new Egg(getRandomNumber(spawnDistance[0], spawnDistance[1]), getRandomNumber(spawnDistance[0], spawnDistance[1]), 8, 8, EntityType.EGG, spriteUrl.egg);
+    let x = getRandomNumber(spawnDistance[0], spawnDistance[1])
+    let y = getRandomNumber(spawnDistance[0], spawnDistance[1])
+    let egg = new Egg(x, y, 8, 8, EntityType.EGG, spriteUrl.egg);
   }
 
   for(let i = 0; i < currentLevel.sharkAmount; i++) {
-    let predator = new Predator(getRandomNumber(spawnDistance[0], spawnDistance[1]), getRandomNumber(spawnDistance[0], spawnDistance[1]), 48, 64, EntityType.PREDATOR, spriteUrl.shark); 
+    let x = getRandomNumber(spawnDistance[0], spawnDistance[1])
+    while (x > 200 && x < 400) {
+      x = getRandomNumber(spawnDistance[0], spawnDistance[1])
+    }
+
+    let y = getRandomNumber(spawnDistance[0], spawnDistance[1])
+    while(y > 200 && y < 400 ) {
+      y = getRandomNumber(spawnDistance[0], spawnDistance[1])
+    }
+
+    let predator = new Predator(x, y, 48, 64, EntityType.PREDATOR, spriteUrl.shark); 
   }
 
   for(let i = 0; i < currentLevel.fishAmount; i++) {
-    let fish = new Fish(getRandomNumber(spawnDistance[0], spawnDistance[1]), getRandomNumber(spawnDistance[0], spawnDistance[1]), 24, 24, EntityType.PREDATOR, spriteUrl.fish);
+    let x = getRandomNumber(spawnDistance[0], spawnDistance[1])
+    while (x > 200 && x < 400) {
+      x = getRandomNumber(spawnDistance[0], spawnDistance[1])
+    }
+
+    let y = getRandomNumber(spawnDistance[0], spawnDistance[1])
+    while(y > 200 && y < 400 ) {
+      y = getRandomNumber(spawnDistance[0], spawnDistance[1])
+    }
+
+    let fish = new Fish(x, y, 24, 24, EntityType.PREDATOR, spriteUrl.fish);
   }
 
   for(let i = 0; i < currentLevel.trapAmount; i++) {
@@ -123,6 +151,7 @@ function init() {
   setMouseEvent();
   getMousePosition();
   // window.requestAnimationFrame(gameLoop);
+  // console.log({entityCollection});
   gameLoop();
 }
 
@@ -162,7 +191,7 @@ function draw() {
     }
   }
   
-  displayMapBorder();
+  // displayMapBorder();
   displayPerformance();
   pop();
 }
@@ -215,7 +244,7 @@ function displayBackground() {
 
 function displayMapBorder() {
   ctx.beginPath();
-  ctx.strokeStyle = "red"
+  ctx.strokeStyle = "rgba(255, 0, 0, 0.5)"
   ctx.lineWidth = 10;
   ctx.rect(-canvasW, -canvasW, canvasW * 3, canvasH * 3);
   ctx.stroke();
@@ -223,12 +252,14 @@ function displayMapBorder() {
 }
 
 function displayPerformance() {
-  mouseX.innerText = `mX: ${Math.round(mouse.x)}`
-  mouseY.innerText = `mY: ${Math.round(mouse.y)}`
+  let mousePosition = new Vector(mouse.x, mouse.y);
+  mouseX.innerText = `mX: ${Math.round(mousePosition.x)}`
+  mouseY.innerText = `mY: ${Math.round(mousePosition.y)}`
   fpsSpan.innerText = `FPS: ${fps}`
   xSpan.innerText = `X: ${Math.round(player.position.x)}`
   ySpan.innerText = `Y: ${Math.round(player.position.y)}`
   eggSpan.innerText = `Remaining eggs: ${GameState.eggsRemaining}`
+  levelText.innerText = `Level: ${GameState.currentLevel + 1}`
 }
 
 function handleKeyInput() {
@@ -264,11 +295,13 @@ const PredatorState = {
 class Entity {
   constructor(x, y, w, h, type, color) {
     this.position = new Vector(x, y);
-    this.velocity = new Vector();
+    this.velocity = new Vector(getRandomNumber(-1,1), getRandomNumber(-1,1)).normalize();
     this.acceleration = new Vector(0,0);
     this.rotationAngle = 0
     this.width = w;
     this.height = h;
+    this.rectWidth = w * .8;
+    this.rectHeight = h * .8;
     this.sprite;
     this.color = color;
     this.type = type;
@@ -398,10 +431,73 @@ class Eel extends Entity {
     })
   }
 
+  getMouseSteeringForce() {
+    let centerPosition = new Vector(canvasW/2, canvasH/2);
+
+    let playerPosition = new Vector(this.position.x - 300, this.position.y - 300)
+    let distance = mouse.distanceTo(playerPosition)
+    
+    let targetPosition;
+
+    let subtractX;
+    let subtractY;
+    // need to differentiate all the conditions 
+    //top left edge of viewport
+    if(this.position.x <= -300 && this.position.y <= -300) {
+      subtractX = this.position.x + canvasW + 30;
+      subtractY = this.position.y + canvasH + 30;
+    }
+    //bottom left edge of viewport
+    else if(this.position.x <= -300 && this.position.y >= 900) {
+      subtractX = this.position.x + canvasW + 30;
+      subtractY = this.position.y - canvasH - 30;
+    }
+    //bottom right edge of viewport
+    else if(this.position.x >= 900 && this.position.y >= 900){
+      subtractX = this.position.x - canvasW - 30;
+      subtractY = this.position.y - canvasH - 30;
+    }
+    //top right edge of viewport
+    else if(this.position.x >= 900 && this.position.y <= -300){
+      subtractX = this.position.x - canvasW - 30;
+      subtractY = this.position.y + canvasH + 30;
+    }
+    //left edge of viewport
+    else if(this.position.x <= -300){
+      subtractX = this.position.x + canvasW + 30;
+      subtractY = 300;
+    }
+    //top edge of viewport
+    else if(this.position.y <= -300) {
+      subtractY = this.position.y + canvasH + 30;
+      subtractX = 300;
+    }
+    //right edge of viewport
+    else if(this.position.x >= 900) {
+      subtractX = this.position.x - canvasW - 30;
+      subtractY = 300;
+    }
+    //bottom edge of view port
+    else if(this.position.y >= 900) {
+      subtractY = this.position.y - canvasH - 30;
+      subtractX = 300;
+    }
+    else {
+      subtractX = centerPosition.x;
+      subtractY = centerPosition.y;
+    }
+
+    // targetPosition = new Vector(mouse.x - (this.position.x + canvasW + 20), mouse.y - 300);
+    targetPosition = new Vector(mouse.x - subtractX, mouse.y - subtractY);
+    return this.seek(targetPosition)
+  }
+
   update() {
     this.animate();
     if(this.isMoveable) {
-      let steer = this.seek(new Vector(mouse.x - canvasW/2, mouse.y - canvasH/2));
+      // let mousePosition = new Vector(mouse.x - canvasW/2, mouse.y - canvasH/2)
+      // let steer = this.seek(mousePosition);
+      let steer = this.getMouseSteeringForce();
       this.applyForce(steer);
       this.velocity.add(this.acceleration);
       if(this.isTrapped) {
@@ -423,17 +519,17 @@ class Eel extends Entity {
     this.isTrapped = false;
     for (let i = 0; i < entityCollection.length; i++) {
       if (detectRectangleCollision(this, entityCollection[i])) {
-        console.log(`collision happening: ${JSON.stringify(this.type)} and ${JSON.stringify(entityCollection[i].type)} `)
+        // console.log(`collision happening: ${JSON.stringify(this.type)} and ${JSON.stringify(entityCollection[i].type)} `)
         if (entityCollection[i].type === EntityType.EGG) {
           entityCollection.splice(i, 1);
+        }
+        else if(entityCollection[i].type == EntityType.TRAP) {
+          this.isTrapped = true;
         }
         else if(entityCollection[i].type === EntityType.PREDATOR) {
           this.alive = false;
           GameState.gameOver = true;
           displayGameText("Game Over")
-        }
-        else if(entityCollection[i].type == EntityType.TRAP) {
-          this.isTrapped = true;
         }
       }
     }
@@ -455,7 +551,16 @@ class Eel extends Entity {
   display() {
     push();
     //translate canvas to middle of player and screen
-    ctx.translate(canvasW/2 - (player.position.x), canvasH /2 - (player.position.y));
+    // if(this.position.x < 900 && this.position.x > -400 && this.position.y > -400 && this.position.y < 900) {
+    //   ctx.translate(canvasW/2 - (this.position.x), canvasH /2 - (this.position.y));
+    // }  else {
+    //   ctx.translate(this.position.x, this.position.y);
+    // }
+    let camera = new Vector(canvasW/2 - (this.position.x), canvasH/2 - (this.position.y));
+    
+    camera.x = clamp(camera.x, -600, 600)
+    camera.y = clamp(camera.y, -600, 600)
+    ctx.translate(camera.x, camera.y);
     push();
     ctx.translate(this.position.x + this.width / 2, this.position.y + this.height / 2)
     ctx.rotate(this.rotationAngle);
@@ -502,6 +607,8 @@ class Eel extends Entity {
     }
   }
 }
+
+const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
 
 class Fish extends Entity {
   constructor(x, y, w, h, type, imgSrc) {
@@ -840,10 +947,23 @@ function detectRectangleCollision(playerRect, otherRect){
 function getRotatedSquareCoordinates(square){
   let centerX = square.position.x + (square.width / 2);
   let centerY = square.position.y + (square.height / 2);
+
   let topLeft = workOutNewPoints(centerX, centerY, square.position.x, square.position.y, square.rotationAngle);
   let topRight = workOutNewPoints(centerX, centerY, square.position.x + square.width, square.position.y, square.rotationAngle);
   let bottomLeft = workOutNewPoints(centerX, centerY, square.position.x, square.position.y + square.height, square.rotationAngle);
   let bottomRight = workOutNewPoints(centerX, centerY, square.position.x + square.width, square.position.y + square.height, square.rotationAngle);
+  
+  // if(square.type === EntityType.PREDATOR) {
+  //   centerX = square.position.x + (square.rectWidth / 2);
+  //   centerY = square.position.y + (square.rectHeight / 2);
+  //   console.log(centerX);
+  //   topLeft = workOutNewPoints(centerX, centerY, square.position.x, square.position.y, square.rotationAngle);
+  //   topRight = workOutNewPoints(centerX, centerY, square.position.x + square.rectWidth, square.position.y, square.rotationAngle);
+  //   bottomLeft = workOutNewPoints(centerX, centerY, square.position.x, square.position.y + square.y, square.rotationAngle);
+  //   bottomRight = workOutNewPoints(centerX, centerY, square.position.x + square.rectWidth, square.position.y + square.rectHeight, square.rotationAngle);
+
+  // }
+
   return{
       tl: topLeft,
       tr: topRight,

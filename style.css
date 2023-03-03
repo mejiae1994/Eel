@@ -106,3 +106,14 @@ body {
   left: 50%;
   transform: translate(-50%, -50%);
 }
+
+#level {
+  display: none;
+  font-family: 'pixel', sans-serif;
+  font-size: 15px;
+  position: absolute;
+  color: rgb(171, 72, 11);
+  z-index: 1;
+  top: 20%;
+  left: 35%;
+}
