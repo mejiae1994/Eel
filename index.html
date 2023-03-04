@@ -9,15 +9,19 @@
 </head>
 <body>
   <canvas id="canvas" width="600" height="600"></canvas>
+  <!-- start screen ui -->
   <div id="game-container">
-  <span id=game-text>Hit the play button and <br> save all the eel eggs</span>
-  <img id="game-screen" src="./sprite/gamegif.gif" alt="">
-  <span id="game-control">use the mouse cursor to move around</span>
+    <span id=game-text>Hit the play button and <br> save all the eel eggs</span>
+    <img id="game-screen" src="./sprite/gamegif.gif" alt="">
+    <span id="game-control">use the mouse cursor to move around</span>
   </div>
-  <span id="egg">Remaining eggs: 0</span>
-  <span id="start">Play</span>
+  <!-- in game ui -->
+  <div id="game-ui">
+    <span id="level">Level 1</span>
+    <span id="egg">Remaining eggs: 0</span>
+  </div>
   <span id="game"></span>
-  <span id="level">Level 1</span>
+  <span id="start">Play</span>
   <script src="app.js" type="module"></script>
   <script src="utils.js"> </script>
 </body>

@@ -13,6 +13,7 @@ body {
   overflow: hidden;
 }
 
+
 #game-container {
   position: relative;
   top: 50%;
@@ -49,7 +50,6 @@ body {
   font-size: 20px;
   position: absolute;
   color: white;
-  /* z-index: 1; */
   top: 70%;
   left: 50%;
   transform: translate(-50%, -50%);
@@ -63,60 +63,41 @@ body {
   background-color: rgba(39, 122, 169, 0.1);
 }
 
-#x {
-  display: inline-block;
-  position: absolute;
-  z-index: 1;
-  top: 14%;
-  left: 56%;
-  font-size: x-large;
-}
-
-#y {
-  display: inline-block;
-  position: absolute;
-  z-index: 1;
-  top: 14%;
-  left: 60%;
-  font-size: x-large;
-}
-
-#mouse-x {
-  display: inline-block;
-  position: absolute;
-  z-index: 1;
-  top: 14%;
-  left: 37.5%;
-  font-size: x-large;
-}
-
-#mouse-y {
-  display: inline-block;
-  position: absolute;
-  z-index: 1;
-  top: 14%;
-  left: 42%;
-  font-size: x-large;
-}
-
-#fps {
-  display: inline-block;
-  position: absolute;
-  z-index: 1;
-  top: 14%;
+#game-ui {
+  display: flex;
+  justify-content: space-between;
+  position: relative;
+  top: 28%;
   left: 50%;
-  font-size: x-large;
+  width: 23vw;
+  height: 1vh;
+  transform: translate(-50%, -50%);
 }
 
 #egg {
   display: none;
-  position: absolute;
   font-family: 'pixel', sans-serif;
+  font-size: .85em;
   color: rgb(171, 72, 11);
   z-index: 1;
-  top: 20%;
-  left: 56.5%;
-  font-size: 15px;
+  padding-right: 2em;
+}
+
+#level {
+  display: none;
+  font-family: 'pixel', sans-serif;
+  font-size: .85em;
+  color: rgb(171, 72, 11);
+  z-index: 1;
+  padding-left: 2em;
+}
+
+@media screen and (max-width: 1920px) {
+  #game-ui {
+    top: 20%;
+    width: calc(23vw * 1.3);
+    height: 1vh;
+  }
 }
 
 #start {
@@ -149,13 +130,3 @@ body {
   transform: translate(-50%, -50%);
 }
 
-#level {
-  display: none;
-  font-family: 'pixel', sans-serif;
-  font-size: 15px;
-  position: absolute;
-  color: rgb(171, 72, 11);
-  z-index: 1;
-  top: 20%;
-  left: 35%;
-}
