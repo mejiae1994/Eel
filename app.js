@@ -12,6 +12,7 @@ const eggSpan = document.getElementById("egg");
 const startButton = document.getElementById("start");
 const gameText = document.getElementById("game");
 const levelText = document.getElementById("level");
+const startScreen = document.getElementById("game-container");
 
 const matrixStack = [];
 let canvasW = canvas.width;
@@ -53,10 +54,10 @@ const GameState = {
       trapAmount: 24
     },
     {
-      sharkAmount: 12,
+      sharkAmount: 15,
       eggAmount: 30,
       fishAmount: 80,
-      trapAmount: 30,
+      trapAmount: 40,
       timeLimit: 60
     }
   ]
@@ -79,9 +80,17 @@ const EntityType = {
   TRAP: "trap"
 }
 
+const PredatorState = {
+  WANDERING: 'wandering',
+  SEEKING: 'seeking'
+}
+
+handleKeyInput();
+
 window.onload = () => {
   startButton.addEventListener("click", () => {
     GameState.gameOver = false;
+    //line below sets the current level back to level 1 after having lost.
     // GameState.currentLevel = 0;
     entityCollection = [];
     init();
@@ -89,6 +98,7 @@ window.onload = () => {
     eggSpan.style.display = "inline-block"
     levelText.style.display = "inline-block"
     gameText.style.display = "none";
+    startScreen.style.display = "none";
   })
 }
 
@@ -97,7 +107,6 @@ function loadNextLevel() {
   GameState.currentLevel++;
   init();
 }
-// window.onload = init;
 
 function init() {
   backgroundImage.src = spriteUrl.background;
@@ -147,10 +156,9 @@ function init() {
     let trap = new Trap(getRandomNumber(spawnDistance[0] + 300, spawnDistance[1] - 300), getRandomNumber(spawnDistance[0], spawnDistance[1]), 16, 16, EntityType.TRAP, spriteUrl.trap);
   }
   
-  handleKeyInput();
+  // handleKeyInput();
   setMouseEvent();
   getMousePosition();
-  // window.requestAnimationFrame(gameLoop);
   // console.log({entityCollection});
   gameLoop();
 }
@@ -214,7 +222,7 @@ function shouldNextLevelLoad() {
   if (eggs.length === 0 && GameState.currentLevel < GameState.level.length - 1) {
     loadNextLevel();
   } else if (eggs.length === 0 && GameState.currentLevel === GameState.level.length - 1) {
-    displayGameText("Good Job! You beat all the levels");
+    displayGameText("You beat all the levels Thank you for playing!");
     GameState.gameOver = true;
   }
 }
@@ -222,13 +230,6 @@ function shouldNextLevelLoad() {
 function displayGameText(msg) {
   gameText.innerText = msg;
   gameText.style.display = "inline-block";
-}
-
-function darken() {
-  ctx.fillStyle = "black";
-  ctx.globalAlpha = 0.2;
-  ctx.fillRect(-canvasW - 20, - canvasH - 20, canvasW * 3 + 45, canvasH * 3 + 40);
-  ctx.globalAlpha = 1;
 }
 
 function displayBackground() {
@@ -239,7 +240,6 @@ function displayBackground() {
   ctx.globalCompositeOperation = "source-over";
   ctx.fillStyle = "rgba(12, 12, 106, 0.32)"
   ctx.fillRect(-canvasW, - canvasH, canvasW * 3, canvasH * 3);
-  // darken();
 }
 
 function displayMapBorder() {
@@ -253,8 +253,8 @@ function displayMapBorder() {
 
 function displayPerformance() {
   let mousePosition = new Vector(mouse.x, mouse.y);
-  mouseX.innerText = `mX: ${Math.round(mousePosition.x)}`
-  mouseY.innerText = `mY: ${Math.round(mousePosition.y)}`
+  mouseX.innerText = `mX: ${Math.round(mouse.x)}`
+  mouseY.innerText = `mY: ${Math.round(mouse.y)}`
   fpsSpan.innerText = `FPS: ${fps}`
   xSpan.innerText = `X: ${Math.round(player.position.x)}`
   ySpan.innerText = `Y: ${Math.round(player.position.y)}`
@@ -287,11 +287,6 @@ function getMousePosition() {
   });
 }
 
-const PredatorState = {
-  WANDERING: 'wandering',
-  SEEKING: 'seeking'
-}
-
 class Entity {
   constructor(x, y, w, h, type, color) {
     this.position = new Vector(x, y);
@@ -300,8 +295,8 @@ class Entity {
     this.rotationAngle = 0
     this.width = w;
     this.height = h;
-    this.rectWidth = w * .8;
-    this.rectHeight = h * .8;
+    this.rectWidth = w * .75;
+    this.rectHeight = h;
     this.sprite;
     this.color = color;
     this.type = type;
@@ -438,10 +433,9 @@ class Eel extends Entity {
     let distance = mouse.distanceTo(playerPosition)
     
     let targetPosition;
-
     let subtractX;
     let subtractY;
-    // need to differentiate all the conditions 
+
     //top left edge of viewport
     if(this.position.x <= -300 && this.position.y <= -300) {
       subtractX = this.position.x + canvasW + 30;
@@ -487,7 +481,6 @@ class Eel extends Entity {
       subtractY = centerPosition.y;
     }
 
-    // targetPosition = new Vector(mouse.x - (this.position.x + canvasW + 20), mouse.y - 300);
     targetPosition = new Vector(mouse.x - subtractX, mouse.y - subtractY);
     return this.seek(targetPosition)
   }
@@ -551,44 +544,23 @@ class Eel extends Entity {
   display() {
     push();
     //translate canvas to middle of player and screen
-    // if(this.position.x < 900 && this.position.x > -400 && this.position.y > -400 && this.position.y < 900) {
-    //   ctx.translate(canvasW/2 - (this.position.x), canvasH /2 - (this.position.y));
-    // }  else {
-    //   ctx.translate(this.position.x, this.position.y);
-    // }
     let camera = new Vector(canvasW/2 - (this.position.x), canvasH/2 - (this.position.y));
-    
     camera.x = clamp(camera.x, -600, 600)
     camera.y = clamp(camera.y, -600, 600)
     ctx.translate(camera.x, camera.y);
+
     push();
     ctx.translate(this.position.x + this.width / 2, this.position.y + this.height / 2)
     ctx.rotate(this.rotationAngle);
     ctx.translate(-(this.position.x + this.width / 2), -(this.position.y + this.height / 2));
-    if(this.rotationAngle > 360 || this.rotationAngle < -360) this.currRotation = 0;
+    if(this.rotationAngle > 360 || this.rotationAngle < -360) this.rotationAngle = 0;
     // transparentRect(this.position.x, this.position.y, this.width, this.height, this.color);
     ctx.drawImage(this.sprite, this.row, 
       this.col, this.width, this.height,
       this.position.x, this.position.y, this.width, this.height);
     pop();
-    this.elapsedFrames++;
-  }
 
-  checkCollision(entity) {
-    if (entity.position.x > this.position.x + this.width||
-      this.position.x > entity.position.x + entity.width||
-      entity.position.y > this.height + this.position.y ||
-      this.position.y > entity.height+ entity.position.y)
-    {
-      this.isColliding = false;
-    }
-    else {
-      this.isColliding = true;
-      entity.isColliding = true;
-      if(entity.type === EntityType.TRAP) {
-        this.isTrapped = true;
-      }
-    }
+    this.elapsedFrames++;
   }
 
   checkBoundaries() {
@@ -607,8 +579,6 @@ class Eel extends Entity {
     }
   }
 }
-
-const clamp = (num, min, max) => Math.min(Math.max(num, min), max);
 
 class Fish extends Entity {
   constructor(x, y, w, h, type, imgSrc) {
@@ -698,7 +668,7 @@ class Fish extends Entity {
     ctx.translate(this.position.x + this.width / 2, this.position.y + this.height /2)
     ctx.rotate(this.rotationAngle);
     ctx.translate(-(this.position.x + this.width / 2), -(this.position.y + this.height /2))
-    if(this.rotationAngle > 360 || this.rotationAngle < -360) this.currRotation = 0;
+    if(this.rotationAngle > 360 || this.rotationAngle < -360) this.rotationAngle = 0;
     // transparentRect(this.position.x, this.position.y, this.width, this.height);
     ctx.drawImage(this.sprite, this.row,
       this.col, this.width, this.height, 
@@ -775,11 +745,11 @@ class Predator extends Entity {
 
   display() {
     push();
-    ctx.translate(this.position.x + this.width / 2, this.position.y + this.height /2)
+    ctx.translate(this.position.x + this.rectWidth / 2, this.position.y + this.rectHeight /2)
     ctx.rotate(this.rotationAngle);
-    ctx.translate(-(this.position.x + this.width / 2), -(this.position.y + this.height /2))
-    if(this.rotationAngle > 360 || this.rotationAngle < -360) this.currRotation = 0;
-    // transparentRect(this.position.x, this.position.y, this.width, this.height);
+    ctx.translate(-(this.position.x + this.rectWidth / 2), -(this.position.y + this.rectHeight /2))
+    if(this.rotationAngle > 360 || this.rotationAngle < -360) this.rotationAngle = 0;
+    // transparentRect(this.position.x + 5, this.position.y, this.rectWidth, this.rectHeight);
     ctx.drawImage(this.sprite, this.row, 
       this.col, this.width, this.height,
       this.position.x, this.position.y, this.width , this.height);
@@ -895,6 +865,9 @@ function transparentRect(x, y, w, h, color) {
   ctx.fillRect(x, y, w, h)
 }
 
+function clamp(num, min, max) {
+  return Math.min(Math.max(num, min), max);
+} 
 
 function detectRectangleCollision(playerRect, otherRect){
   let tRR = getRotatedSquareCoordinates(playerRect);
@@ -945,26 +918,33 @@ function detectRectangleCollision(playerRect, otherRect){
 }
 
 function getRotatedSquareCoordinates(square){
-  let centerX = square.position.x + (square.width / 2);
-  let centerY = square.position.y + (square.height / 2);
+  let centerX;
+  let centerY;
+  let topLeft;
+  let topRight;
+  let bottomLeft; 
+  let bottomRight;
 
-  let topLeft = workOutNewPoints(centerX, centerY, square.position.x, square.position.y, square.rotationAngle);
-  let topRight = workOutNewPoints(centerX, centerY, square.position.x + square.width, square.position.y, square.rotationAngle);
-  let bottomLeft = workOutNewPoints(centerX, centerY, square.position.x, square.position.y + square.height, square.rotationAngle);
-  let bottomRight = workOutNewPoints(centerX, centerY, square.position.x + square.width, square.position.y + square.height, square.rotationAngle);
-  
-  // if(square.type === EntityType.PREDATOR) {
-  //   centerX = square.position.x + (square.rectWidth / 2);
-  //   centerY = square.position.y + (square.rectHeight / 2);
-  //   console.log(centerX);
-  //   topLeft = workOutNewPoints(centerX, centerY, square.position.x, square.position.y, square.rotationAngle);
-  //   topRight = workOutNewPoints(centerX, centerY, square.position.x + square.rectWidth, square.position.y, square.rotationAngle);
-  //   bottomLeft = workOutNewPoints(centerX, centerY, square.position.x, square.position.y + square.y, square.rotationAngle);
-  //   bottomRight = workOutNewPoints(centerX, centerY, square.position.x + square.rectWidth, square.position.y + square.rectHeight, square.rotationAngle);
+  if(square.type === EntityType.PREDATOR) {
+    centerX = square.position.x + 5 + (square.rectWidth / 2);
+    centerY = square.position.y + (square.rectHeight / 2);
 
-  // }
+    topLeft = workOutNewPoints(centerX, centerY, square.position.x, square.position.y, square.rotationAngle);
+    topRight = workOutNewPoints(centerX, centerY, square.position.x + square.rectWidth, square.position.y, square.rotationAngle);
+    bottomLeft = workOutNewPoints(centerX, centerY, square.position.x, square.position.y + square.rectHeight, square.rotationAngle);
+    bottomRight = workOutNewPoints(centerX, centerY, square.position.x + square.rectWidth, square.position.y + square.rectHeight, square.rotationAngle);
 
-  return{
+  } else {
+    centerX = square.position.x + (square.width / 2);
+    centerY = square.position.y + (square.height / 2);
+
+    topLeft = workOutNewPoints(centerX, centerY, square.position.x, square.position.y, square.rotationAngle);
+    topRight = workOutNewPoints(centerX, centerY, square.position.x + square.width, square.position.y, square.rotationAngle);
+    bottomLeft = workOutNewPoints(centerX, centerY, square.position.x, square.position.y + square.height, square.rotationAngle);
+    bottomRight = workOutNewPoints(centerX, centerY, square.position.x + square.width, square.position.y + square.height, square.rotationAngle);
+  }
+
+  return {
       tl: topLeft,
       tr: topRight,
       bl: bottomLeft,
