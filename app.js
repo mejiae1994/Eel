@@ -252,12 +252,12 @@ function displayMapBorder() {
 }
 
 function displayPerformance() {
-  let mousePosition = new Vector(mouse.x, mouse.y);
-  mouseX.innerText = `mX: ${Math.round(mouse.x)}`
-  mouseY.innerText = `mY: ${Math.round(mouse.y)}`
-  fpsSpan.innerText = `FPS: ${fps}`
-  xSpan.innerText = `X: ${Math.round(player.position.x)}`
-  ySpan.innerText = `Y: ${Math.round(player.position.y)}`
+  // let mousePosition = new Vector(mouse.x, mouse.y);
+  // mouseX.innerText = `mX: ${Math.round(mouse.x)}`
+  // mouseY.innerText = `mY: ${Math.round(mouse.y)}`
+  // fpsSpan.innerText = `FPS: ${fps}`
+  // xSpan.innerText = `X: ${Math.round(player.position.x)}`
+  // ySpan.innerText = `Y: ${Math.round(player.position.y)}`
   eggSpan.innerText = `Remaining eggs: ${GameState.eggsRemaining}`
   levelText.innerText = `Level: ${GameState.currentLevel + 1}`
 }
